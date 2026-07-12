@@ -1,3 +1,6 @@
+-include .env
+export
+
 # Define paths
 BINARY_NAME := golang-proj
 CMD_DIR := ./cmd/golang-proj
@@ -17,6 +20,24 @@ run: build
 # Clean target
 clean:
 	rm -rf $(BIN_DIR)/*
-	rm -rf docs
 
-.PHONY: build run clean
+# Create the inital container
+create-docker-db:
+	sudo docker run --name $(DOCKER_DB_NAME) -e MYSQL_ROOT_PASSWORD=$(DOCKER_PASS) -p $(DOCKER_PORT):3306 -d mysql:latest
+
+clean-docker-db:
+	sudo docker rm -f $(DOCKER_DB_NAME)
+
+check-docker-health:
+	sudo docker ps
+
+connect-to-db:
+	sudo docker exec -it $(DOCKER_DB_NAME) mysql -u root -p
+
+stop-docker-db:
+	sudo docker stop $(DOCKER_DB_NAME)
+
+start-docker-db:
+	sudo docker start $(DOCKER_DB_NAME)
+
+.PHONY: build run clean launch-docker-db clean-docker-db check-docker-health connect-to-db
