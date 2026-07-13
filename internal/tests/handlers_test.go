@@ -7,6 +7,7 @@ import (
 	"golang-proj/internal/server"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -50,6 +51,15 @@ func TestHandleSaves(t *testing.T) {
 				Email: "Test",
 			},
 			expectedHTTPStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Over 1mb limit.",
+			reqBody: models.TestRequest{
+				Name:  strings.Repeat("A", (1<<20)+100),
+				Age:   123,
+				Email: "Test",
+			},
+			expectedHTTPStatus: http.StatusRequestEntityTooLarge,
 		},
 	}
 

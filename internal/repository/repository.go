@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Server struct {
@@ -14,10 +14,12 @@ type Server struct {
 
 func ConnectToDatabase(dsn string) (*Server, error) {
 	// init connection
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+
+	defer db.Close()
 
 	// ping db
 	if err := db.Ping(); err != nil {

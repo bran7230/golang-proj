@@ -21,23 +21,28 @@ run: build
 clean:
 	rm -rf $(BIN_DIR)/*
 
-# Create the inital container
+# Create the initial postgres container
 create-docker-db:
-	sudo docker run --name $(DOCKER_DB_NAME) -e MYSQL_ROOT_PASSWORD=$(DOCKER_PASS) -p $(DOCKER_PORT):3306 -d mysql:latest
+	sudo docker run --name $(DOCKER_DB_NAME) -e POSTGRES_PASSWORD=$(DOCKER_PASS) -p $(DOCKER_PORT):5432 -d postgres:latest
 
+# Remove the docker container
 clean-docker-db:
 	sudo docker rm -f $(DOCKER_DB_NAME)
 
+# Check container status
 check-docker-health:
 	sudo docker ps
 
+# Connect to postgres interactively
 connect-to-db:
-	sudo docker exec -it $(DOCKER_DB_NAME) mysql -u root -p
+	sudo docker exec -it $(DOCKER_DB_NAME) psql -U postgres
 
+# Stop the database container
 stop-docker-db:
 	sudo docker stop $(DOCKER_DB_NAME)
 
+# Start the database container
 start-docker-db:
 	sudo docker start $(DOCKER_DB_NAME)
 
-.PHONY: build run clean launch-docker-db clean-docker-db check-docker-health connect-to-db
+.PHONY: build run clean create-docker-db clean-docker-db check-docker-health connect-to-db stop-docker-db start-docker-db

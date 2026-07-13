@@ -41,7 +41,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -56,13 +55,13 @@ func encode[T any](w http.ResponseWriter, status int, v T) error {
 	return nil
 }
 
-func decode[T any](r *http.Request) (T, error) {
+func decode[T any](w http.ResponseWriter, r *http.Request) (T, error) {
 	var v T
 
-	// enforce limits to stop a common DOS atatck.(1mb limit)
-	limit := io.LimitReader(r.Body, 1<<20)
+	// enforce limits to stop a common DOS atatck.(1mb limit or 1048576 bytes)
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
-	dec := json.NewDecoder(limit)
+	dec := json.NewDecoder(r.Body)
 	// can change to XML if needed.
 	// use xml.NewDecorder() instead.
 	if err := dec.Decode(&v); err != nil {
