@@ -6,31 +6,26 @@ import (
 	"net/http"
 
 	"golang-proj/internal/models"
+	"golang-proj/internal/service"
 )
 
 // TODO: Implement hmac-sha256 encoding in the response / requests.
 func HandleSaves(w http.ResponseWriter, r *http.Request) {
 
-	requestData, decodingErr := decode[models.TestRequest](w, r)
+	requestData, decodingErr := decode[models.TycoonRequest](w, r)
 
 	if decodingErr != nil {
 		var maxBytesError *http.MaxBytesError
 		if errors.As(decodingErr, &maxBytesError) {
-			sendError(w, http.StatusRequestEntityTooLarge, "Payload exceeded max limit.")
+			sendError(w, http.StatusRequestEntityTooLarge, decodingErr.Error())
 			return
 		}
-		sendError(w, http.StatusBadRequest, "error parsing data.")
+		sendError(w, http.StatusBadRequest, decodingErr.Error())
 		return
 	}
 
-	if requestData.Name == "" {
-		sendError(w, http.StatusBadRequest, "Name field missing.")
-		return
-	} else if requestData.Age <= 0 {
-		sendError(w, http.StatusBadRequest, "Age field missing / is 0.")
-		return
-	} else if requestData.Email == "" {
-		sendError(w, http.StatusBadRequest, "Email field is missing.")
+	if err := service.ValidateTycoonRequest(&requestData); err != nil {
+		sendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
