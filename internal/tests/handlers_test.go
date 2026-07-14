@@ -47,7 +47,7 @@ func TestHandleSaves(t *testing.T) {
 					},
 				},
 			},
-			expectedHTTPStatus: http.StatusOK,
+			expectedHTTPStatus: http.StatusAccepted,
 		},
 		{
 			name: "Missing serverID",
@@ -174,7 +174,7 @@ func TestHandleSaves(t *testing.T) {
 				Timestamp: time.Now(),
 				Players:   []models.Player{},
 			},
-			expectedHTTPStatus: http.StatusOK,
+			expectedHTTPStatus: http.StatusAccepted,
 		},
 		{
 			name: "Player has no objects placed.",
@@ -192,7 +192,7 @@ func TestHandleSaves(t *testing.T) {
 					},
 				},
 			},
-			expectedHTTPStatus: http.StatusOK,
+			expectedHTTPStatus: http.StatusAccepted,
 		},
 		{
 			name: "Player has no currency.",
@@ -222,7 +222,7 @@ func TestHandleSaves(t *testing.T) {
 					},
 				},
 			},
-			expectedHTTPStatus: http.StatusOK,
+			expectedHTTPStatus: http.StatusAccepted,
 		},
 		{
 			name: "Player has no rebirths.",
@@ -252,7 +252,33 @@ func TestHandleSaves(t *testing.T) {
 					},
 				},
 			},
-			expectedHTTPStatus: http.StatusOK,
+			expectedHTTPStatus: http.StatusAccepted,
+		},
+		{
+			name: "Player has no stats(should NEVER BE A NULL OBJ!!).",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHTTPStatus: http.StatusBadRequest,
 		},
 	}
 

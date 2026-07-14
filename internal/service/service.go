@@ -19,6 +19,9 @@ func ValidateTycoonRequest(r *models.TycoonRequest) error {
 		if player.PlayerId <= 0 {
 			return fmt.Errorf("Player id is null or <= 0.")
 		}
+		if player.Stats == nil {
+			return fmt.Errorf("Player has no stats(it's null).")
+		}
 
 	}
 
