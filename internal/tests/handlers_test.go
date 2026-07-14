@@ -7,8 +7,8 @@ import (
 	"golang-proj/internal/server"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+	"time"
 )
 
 // test commit
@@ -16,50 +16,243 @@ func TestHandleSaves(t *testing.T) {
 	// test cases
 	tests := []struct {
 		name               string
-		reqBody            models.TestRequest
+		reqBody            models.TycoonRequest
 		expectedHTTPStatus int
 	}{
 		{
 			name: "Valid request",
-			reqBody: models.TestRequest{
-				Name:  "TestUser",
-				Email: "Test",
-				Age:   123,
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
 			},
 			expectedHTTPStatus: http.StatusOK,
 		},
 		{
-			name: "Missing name field",
-			reqBody: models.TestRequest{
-				Email: "Test",
-				Age:   123,
+			name: "Missing serverID",
+			reqBody: models.TycoonRequest{
+				ServerId:  "",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
 			},
 			expectedHTTPStatus: http.StatusBadRequest,
 		},
 		{
-			name: "Missing email(invalid req)",
-			reqBody: models.TestRequest{
-				Name: "TestUser",
-				Age:  123,
+			name: "Invalid player ID(Zero)",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 0,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
 			},
 			expectedHTTPStatus: http.StatusBadRequest,
 		},
 		{
-			name: "Missing age field",
-			reqBody: models.TestRequest{
-				Name:  "TestUser",
-				Email: "Test",
+			name: "Invalid player id(missing completly)",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
 			},
 			expectedHTTPStatus: http.StatusBadRequest,
 		},
 		{
-			name: "Over 1mb limit.",
-			reqBody: models.TestRequest{
-				Name:  strings.Repeat("A", (1<<20)+100),
-				Age:   123,
-				Email: "Test",
+			name: "Missing timestamp.",
+			reqBody: models.TycoonRequest{
+				ServerId: "awsawswas",
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
 			},
-			expectedHTTPStatus: http.StatusRequestEntityTooLarge,
+			expectedHTTPStatus: http.StatusBadRequest,
+		},
+		{
+			name: "No players online.",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players:   []models.Player{},
+			},
+			expectedHTTPStatus: http.StatusOK,
+		},
+		{
+			name: "Player has no objects placed.",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{},
+					},
+				},
+			},
+			expectedHTTPStatus: http.StatusOK,
+		},
+		{
+			name: "Player has no currency.",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 0,
+							Rebirths:      1,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHTTPStatus: http.StatusOK,
+		},
+		{
+			name: "Player has no rebirths.",
+			reqBody: models.TycoonRequest{
+				ServerId:  "awsawswas",
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						Stats: &models.PlayerStats{
+							TotalCurrency: 123456,
+							Rebirths:      0,
+						},
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHTTPStatus: http.StatusOK,
 		},
 	}
 
