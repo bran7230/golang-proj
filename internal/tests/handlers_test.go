@@ -7,6 +7,7 @@ import (
 	"golang-proj/internal/server"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -279,6 +280,32 @@ func TestHandleSaves(t *testing.T) {
 				},
 			},
 			expectedHTTPStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Json file is too large(more than 1mb)",
+			reqBody: models.TycoonRequest{
+				ServerId:  strings.Repeat("A", 2<<24),
+				Timestamp: time.Now(),
+				Players: []models.Player{
+					{
+						PlayerId: 1234566,
+						PlacedObjects: []models.Objects{
+							{
+								ItemId: "awaswswa",
+								Position: models.ObjectPositions{
+									X: 23,
+									Y: 23,
+									Z: 0,
+								},
+								Rotation: models.ObjectRotation{
+									Y: 23,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHTTPStatus: http.StatusRequestEntityTooLarge,
 		},
 	}
 

@@ -19,8 +19,6 @@ func ConnectToDatabase(dsn string) (*Server, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	defer db.Close()
-
 	// ping db
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)

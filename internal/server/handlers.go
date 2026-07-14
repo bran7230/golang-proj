@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"golang-proj/internal/models"
 	"golang-proj/internal/service"
@@ -30,7 +31,7 @@ func HandleSaves(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := models.TestResponse{
-		ErrorCode: 200,
+		ErrorCode: 202,
 		Data: []any{
 			"123",
 			123,
@@ -44,5 +45,13 @@ func HandleSaves(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing data.", http.StatusInternalServerError)
 		return
 	}
+
+	// process data
+	go func(data models.TycoonRequest) {
+		if err := service.ProcessTycoonData(&data); err != nil {
+			log.Printf("Failed to process server request. Error: %s At: %s ", err.Error(), time.Now())
+			return
+		}
+	}(requestData)
 
 }
