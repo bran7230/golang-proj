@@ -20,13 +20,13 @@ type ErrorResponse struct {
 type TycoonRequest struct {
 	ServerId  string    `json:"serverId"`
 	Timestamp time.Time `json:"timestamp"`
-	Players   []Player  `json:"players"`
+	Players   []Player  `json:"players,omitempty"`
 }
 
 type Player struct {
-	PlayerId      int64       `json:"playerId"`
-	Stats         PlayerStats `json:"stats"`
-	PlacedObjects []Objects   `json:"placedObjects"`
+	PlayerId      int64        `json:"playerId"`
+	Stats         *PlayerStats `json:"stats,omitempty"`
+	PlacedObjects []Objects    `json:"placedObjects,omitempty"`
 }
 
 type PlayerStats struct {

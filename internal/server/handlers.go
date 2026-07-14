@@ -36,7 +36,7 @@ func HandleSaves(w http.ResponseWriter, r *http.Request) {
 			123,
 		},
 	}
-	err := encode(w, 200, response)
+	err := encode(w, http.StatusAccepted, response)
 
 	if err != nil {
 		log.Print("Failed to encode response: ", err)
