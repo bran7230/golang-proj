@@ -5,6 +5,8 @@ I use my make file cmds and a .env to pass in params. Run those cmd's to set it 
 
 To clean your docker instance(db) use: sudo docker rm -f my-tycoon-db(or your docker name.) or make clean-docker-db
 
+---
+
 ### DataBase tables: 
 
 - Player:
