@@ -45,7 +45,6 @@ func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 		return fmt.Errorf("Request cannot be processed / is null.")
 	}
 
-	playerInserts := make(map[*models.Player]models.Player)
 	for _, player := range r.Players {
 		query := `
 
@@ -61,7 +60,7 @@ func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 		}
 	}
 
-	fmt.Printf("Inserted players: %d", len(playerInserts))
+	fmt.Printf("Inserted players: %d", len(r.Players))
 
 	return nil
 }
