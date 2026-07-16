@@ -22,12 +22,22 @@ func ValidateTycoonRequest(r *models.TycoonRequest) error {
 		if player.Stats == nil {
 			return fmt.Errorf("Player has no stats(it's null).")
 		}
-
 	}
 
 	return nil
 }
 
 func ProcessTycoonData(r *models.TycoonRequest) error {
-	return fmt.Errorf("Failed to decode data.")
+	if r == nil {
+		return fmt.Errorf("Request cannot be processed / is null.")
+	}
+
+	playerInserts := make(map[*models.Player]models.Player)
+	for _, player := range r.Players {
+		playerInserts[&player] = player
+	}
+
+	fmt.Printf("Player data: %+v\n", playerInserts)
+
+	return nil
 }

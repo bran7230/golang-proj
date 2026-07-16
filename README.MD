@@ -1,4 +1,4 @@
-## Setup
+### Setup
 For testing purposes, i use docker to run a local MYSQP server.
 
 I use my make file cmds and a .env to pass in params. Run those cmd's to set it up(you will need to make a .env in root)

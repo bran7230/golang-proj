@@ -31,5 +31,12 @@ func ConnectToDatabase(dsn string) (*Server, error) {
 	db.SetMaxIdleConns(25)
 
 	return &Server{db: db}, nil
+}
 
+func (s *Server) InsertUser(dbQuery string, args ...interface{}) {
+	db := s
+	_, err := db.db.Exec(dbQuery, args)
+	if err != nil {
+		panic(err.Error())
+	}
 }
