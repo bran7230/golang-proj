@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"golang-proj/internal/models"
 	"golang-proj/internal/service"
@@ -30,6 +29,16 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			return
 		}
 
+		// setup data qeue
+		if err := tycoonSvc.ProcessTycoonData(&requestData); err != nil {
+			if errors.Is(err, service.ErrQueueFull) {
+				sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
+				return
+			}
+			sendError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
 		response := models.TestResponse{
 			ErrorCode: 202,
 			Data: []any{
@@ -50,13 +59,5 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			log.Print("Tycoon service dependency is not configured")
 			return
 		}
-
-		// process data
-		go func(data models.TycoonRequest) {
-			if err := tycoonSvc.ProcessTycoonData(&data); err != nil {
-				log.Printf("Failed to process server request. Error: %s At: %s ", err.Error(), time.Now())
-				return
-			}
-		}(requestData)
 	}
 }

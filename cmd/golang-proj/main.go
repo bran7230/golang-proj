@@ -10,24 +10,23 @@ import (
 
 func main() {
 	db, err := InitiateDatabaseConnection()
-
 	if err != nil {
 		log.Fatalf("Error initiating database connection. Error: %s", err.Error())
 	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	tycoonSvc := service.NewTycoonService(db)
+	// services
+	tycoonSvc := service.NewTycoonService(db, 10000, 10)
 	if tycoonSvc == nil {
 		log.Fatal("Error injecting db into service.")
 		return
 	}
 
-	/**
-		to modify this, go to internal/server/routes.go
-	**/
+	// to modify this, go to internal/server/routes.go
 	router := server.SetupRoutes(tycoonSvc)
 
 	log.Println("Starting server on :" + port + "...")
