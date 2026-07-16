@@ -79,13 +79,23 @@ func (s *TycoonService) worker() {
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 	for _, player := range r.Players {
 		query := `
-            INSERT INTO players (player_id, rebirths) 
-            VALUES ($1, $2)
+            INSERT INTO players (
+			player_id, 
+			total_currency,
+			rebirths,
+			placed_objects,
+			current_server_id,
+			date_last_updated) 
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT(player_id)
             DO UPDATE SET
-                rebirths = EXCLUDED.rebirths
+				total_currency = EXCLUDED.total_currency,
+                rebirths = EXCLUDED.rebirths,
+				placed_objects = EXCLUDED.placed_objects,
+				current_server_id = EXCLUDED.current_server_id,
+				date_last_updated = EXCLUDED.date_last_updated
             `
-		err := s.repo.InsertUser(query, player.PlayerId, player.Stats.Rebirths)
+		err := s.repo.InsertUser(query, player.PlayerId, player.Stats.TotalCurrency, player.Stats.Rebirths, player.PlacedObjects, r.ServerId, r.Timestamp)
 		if err != nil {
 			return fmt.Errorf("failed to insert player %d: %w", player.PlayerId, err)
 		}

@@ -19,7 +19,7 @@ func main() {
 		port = "8080"
 	}
 
-	// services
+	// setup data queue
 	tycoonSvc := service.NewTycoonService(db, 10000, 10)
 	if tycoonSvc == nil {
 		log.Fatal("Error injecting db into service.")

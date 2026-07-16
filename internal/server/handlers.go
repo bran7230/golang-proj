@@ -29,7 +29,6 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			return
 		}
 
-		// setup data qeue
 		if err := tycoonSvc.ProcessTycoonData(&requestData); err != nil {
 			if errors.Is(err, service.ErrQueueFull) {
 				sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
@@ -39,16 +38,10 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			return
 		}
 
-		response := models.TestResponse{
-			ErrorCode: 202,
-			Data: []any{
-				"123",
-				123,
-			},
+		response := map[string]any{
+			"message": "Accepted payload, processing now!",
 		}
-		err := encode(w, http.StatusAccepted, response)
-
-		if err != nil {
+		if err := encode(w, http.StatusAccepted, response); err != nil {
 			log.Print("Failed to encode response: ", err)
 
 			http.Error(w, "Error parsing data.", http.StatusInternalServerError)
