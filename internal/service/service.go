@@ -3,7 +3,20 @@ package service
 import (
 	"fmt"
 	"golang-proj/internal/models"
+	"golang-proj/internal/repository"
 )
+
+type TycoonProcessor interface {
+	ProcessTycoonData(r *models.TycoonRequest) error
+}
+
+type TycoonService struct {
+	repo repository.Repository
+}
+
+func NewTycoonService(repo repository.Repository) *TycoonService {
+	return &TycoonService{repo: repo}
+}
 
 func ValidateTycoonRequest(r *models.TycoonRequest) error {
 
@@ -27,17 +40,28 @@ func ValidateTycoonRequest(r *models.TycoonRequest) error {
 	return nil
 }
 
-func ProcessTycoonData(r *models.TycoonRequest) error {
+func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 	if r == nil {
 		return fmt.Errorf("Request cannot be processed / is null.")
 	}
 
 	playerInserts := make(map[*models.Player]models.Player)
 	for _, player := range r.Players {
-		playerInserts[&player] = player
+		query := `
+
+		INSERT INTO players (player_id, rebirths) 
+		VALUES ($1, $2)
+		ON CONFLICT(player_id)
+		DO UPDATE SET
+			rebirths = EXCLUDED.rebirths
+		`
+		err := s.repo.InsertUser(query, player.PlayerId, player.Stats.Rebirths)
+		if err != nil {
+			return fmt.Errorf("failed to insert player %d: %w", player.PlayerId, err)
+		}
 	}
 
-	fmt.Printf("Player data: %+v\n", playerInserts)
+	fmt.Printf("Inserted players: %d", len(playerInserts))
 
 	return nil
 }

@@ -23,7 +23,11 @@ clean:
 
 # Create the initial postgres container
 create-docker-db:
-	sudo docker run --name $(DOCKER_DB_NAME) -e POSTGRES_PASSWORD=$(DOCKER_PASS) -p $(DOCKER_PORT):5432 -d postgres:latest
+	sudo docker run --name $(DOCKER_DB_NAME) \
+		-e POSTGRES_PASSWORD=$(DOCKER_PASS) \
+		-e POSTGRES_DB=$(POSTGRESS_DB_NAME)\
+		-p $(DOCKER_PORT):5432 \
+		-d postgres:latest
 
 # Remove the docker container
 clean-docker-db:
@@ -35,7 +39,7 @@ check-docker-health:
 
 # Connect to postgres interactively
 connect-to-db:
-	sudo docker exec -it $(DOCKER_DB_NAME) psql -U postgres
+	sudo docker exec -it $(DOCKER_DB_NAME) psql -U postgres -d tycoon_db
 
 # Stop the database container
 stop-docker-db:

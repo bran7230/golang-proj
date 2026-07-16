@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+type stubTycoonService struct{}
+
+func (s stubTycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
+	return nil
+}
+
 // test commit
 func TestHandleSaves(t *testing.T) {
 	// test cases
@@ -332,7 +338,7 @@ func TestHandleSaves(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			// test the endpoint
-			handler := http.HandlerFunc(server.HandleSaves)
+			handler := http.HandlerFunc(server.HandleSaves(stubTycoonService{}))
 			handler.ServeHTTP(rr, req)
 
 			// validate status code against the expected value in the struct
