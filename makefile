@@ -19,7 +19,13 @@ run: build
 
 # Clean target
 clean:
-	rm -rf $(BIN_DIR)/*
+	@if [ -d "$(BIN_DIR)" ]; then \
+		echo "Cleaning $(BIN_DIR)..."; \
+		rm -rf $(BIN_DIR)/*; \
+		echo "Bin cleaned!"; \
+	else \
+		echo "Directory '$(BIN_DIR)' does not exist, nothing to clean."; \
+	fi
 
 # Create the initial postgres container
 create-docker-db:

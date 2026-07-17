@@ -17,6 +17,15 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type PlayerDatabaseTable struct {
+	ServerId      string
+	Timestamp     time.Time
+	PlayerId      int64
+	PlacedObjects []Objects
+	TotalCurrency int
+	Rebirths      int
+}
+
 type TycoonRequest struct {
 	ServerId  string    `json:"serverId"`
 	Timestamp time.Time `json:"timestamp"`

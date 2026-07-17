@@ -1,11 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"golang-proj/internal/models"
 	"golang-proj/internal/repository"
 	"log"
+	"strings"
 )
 
 var ErrQueueFull = errors.New("save queue is full, system is overloaded.")
@@ -77,29 +79,52 @@ func (s *TycoonService) worker() {
 }
 
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
-	for _, player := range r.Players {
-		query := `
-            INSERT INTO players (
-			player_id, 
-			total_currency,
-			rebirths,
-			placed_objects,
-			current_server_id,
-			date_last_updated) 
-            VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT(player_id)
-            DO UPDATE SET
-				total_currency = EXCLUDED.total_currency,
-                rebirths = EXCLUDED.rebirths,
-				placed_objects = EXCLUDED.placed_objects,
-				current_server_id = EXCLUDED.current_server_id,
-				date_last_updated = EXCLUDED.date_last_updated
-            `
-		err := s.repo.InsertUser(query, player.PlayerId, player.Stats.TotalCurrency, player.Stats.Rebirths, player.PlacedObjects, r.ServerId, r.Timestamp)
+
+	queryHeader := `
+	            INSERT INTO players (
+				player_id,
+				total_currency,
+				rebirths,
+				placed_objects,
+				current_server_id,
+				date_last_updated)
+	            VALUES`
+
+	queryValues := make([]string, len(r.Players))
+
+	queryTail := `
+				ON CONFLICT(player_id)
+	            DO UPDATE SET
+					total_currency = EXCLUDED.total_currency,
+	                rebirths = EXCLUDED.rebirths,
+					placed_objects = EXCLUDED.placed_objects,
+					current_server_id = EXCLUDED.current_server_id,
+					date_last_updated = EXCLUDED.date_last_updated
+	            `
+	for i, player := range r.Players {
+		placedObjects, err := json.Marshal(player.PlacedObjects)
 		if err != nil {
-			return fmt.Errorf("failed to insert player %d: %w", player.PlayerId, err)
+			return err
 		}
+		// Escape any single quotes in the JSON string to avoid SQL syntax errors
+		placedEsc := strings.ReplaceAll(string(placedObjects), "'", "''")
+		// Format a single row of VALUES. Use explicit formatting to avoid fmt.Sprintf extra-args behavior.
+		queryValues[i] = fmt.Sprintf("(%d,%d,%d,'%s','%s','%s')", player.PlayerId,
+			player.Stats.TotalCurrency,
+			player.Stats.Rebirths,
+			placedEsc,
+			r.ServerId,
+			r.Timestamp.Format("2006-01-02 15:04:05"))
 	}
+
+	valuesSection := strings.Join(queryValues, ",")
+	query := queryHeader + "\n" + valuesSection + "\n" + queryTail
+
+	err := s.repo.InsertUser(query)
+	if err != nil {
+		return fmt.Errorf("failed to insert player, error: %s", err)
+	}
+
 	fmt.Printf("Affected players: %d\n", len(r.Players))
 	return nil
 }

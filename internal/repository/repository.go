@@ -12,7 +12,7 @@ import (
 )
 
 type Repository interface {
-	InsertUser(dbQuery string, args ...interface{}) error
+	InsertUser(dbQuery string, args ...string) error
 }
 
 type Database struct {
@@ -45,12 +45,11 @@ func ConnectToDatabase(dsn string) (*Database, error) {
 	return NewServer(db), nil
 }
 
-func (s *Database) InsertUser(dbQuery string, args ...interface{}) error {
+func (s *Database) InsertUser(dbQuery string, args ...string) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("database repository is not initialized")
 	}
-
-	_, err := s.db.Exec(dbQuery, args...)
+	_, err := s.db.Exec(dbQuery)
 	if err != nil {
 		return err
 	}
