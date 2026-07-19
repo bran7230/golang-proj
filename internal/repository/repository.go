@@ -14,41 +14,85 @@ import (
 
 type Repository interface {
 	InsertUser(dbQuery string, args ...any) error
+	HealthCheck(ctx context.Context) error
 }
 
 type Database struct {
 	db *sql.DB
 }
 
+// DbConfig holds database connection pool configuration
+type DbConfig struct {
+	MaxOpenConns    int           // max open connections in pool (default 25)
+	MaxIdleConns    int           // max idle connections to keep (default 10)
+	ConnMaxLifetime time.Duration // max lifetime of a connection (default 5 minutes)
+	ConnMaxIdleTime time.Duration // max idle time before closing (default 2 minutes)
+}
+
+// DefaultDbConfig returns reasonable production defaults
+func DefaultDbConfig() DbConfig {
+	return DbConfig{
+		MaxOpenConns:    25,
+		MaxIdleConns:    10,
+		ConnMaxLifetime: 5 * time.Minute,
+		ConnMaxIdleTime: 2 * time.Minute,
+	}
+}
+
 func NewServer(db *sql.DB) *Database {
 	return &Database{db: db}
 }
 
+// ConnectToDatabase initializes a PostgreSQL connection pool with the given config
 func ConnectToDatabase(dsn string) (*Database, error) {
-	// init connection with connection pool
+	return ConnectToDatabaseWithConfig(dsn, DefaultDbConfig())
+}
+
+// ConnectToDatabaseWithConfig initializes a PostgreSQL connection pool with custom config
+func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
+	// init connection with pgxpool
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		return nil, fmt.Errorf("could not initiate connection pool. Error: %s", err.Error())
+		return nil, fmt.Errorf("could not initiate connection pool: %w", err)
 	}
 	db := stdlib.OpenDBFromPool(pool)
 
-	// ping db
-	if err := db.Ping(); err != nil {
+	// ping db with context timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	log.Println("Successfully connected to database.")
 
-	// limit connections
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	// set a reasonable max lifetime for connections
-	db.SetConnMaxLifetime(5 * time.Minute)
+	// configure connection pool
+	if cfg.MaxOpenConns <= 0 {
+		cfg.MaxOpenConns = 25
+	}
+	if cfg.MaxIdleConns <= 0 {
+		cfg.MaxIdleConns = 10
+	}
+	if cfg.ConnMaxLifetime <= 0 {
+		cfg.ConnMaxLifetime = 5 * time.Minute
+	}
+	if cfg.ConnMaxIdleTime <= 0 {
+		cfg.ConnMaxIdleTime = 2 * time.Minute
+	}
+
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
+
+	log.Printf("Database pool configured: MaxOpenConns=%d MaxIdleConns=%d ConnMaxLifetime=%s ConnMaxIdleTime=%s",
+		cfg.MaxOpenConns, cfg.MaxIdleConns, cfg.ConnMaxLifetime, cfg.ConnMaxIdleTime)
 
 	return NewServer(db), nil
 }
 
-// Close expose the connection closure to the rest of the application
+// Close closes the database connection
 func (s *Database) Close() error {
 	if s.db != nil {
 		return s.db.Close()
@@ -56,13 +100,24 @@ func (s *Database) Close() error {
 	return nil
 }
 
+// HealthCheck pings the database to verify connectivity
+func (s *Database) HealthCheck(ctx context.Context) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return s.db.PingContext(ctx)
+}
+
+// InsertUser executes an insert query with parameterized args (prevents SQL injection)
 func (s *Database) InsertUser(dbQuery string, args ...any) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("database repository is not initialized")
 	}
-	_, err := s.db.Exec(dbQuery, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := s.db.ExecContext(ctx, dbQuery, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("exec failed: %w", err)
 	}
 	return nil
 }

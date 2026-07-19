@@ -13,6 +13,8 @@ build:
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
 # Build the package located in CMD_DIR and output to BIN_DIR/BINARY_NAME
+	go vet ./internal/*
+	go vet ./cmd/*
 	go build -o $(BIN_DIR)/$(BINARY_NAME) $(CMD_DIR)
 
 # Run target
@@ -30,6 +32,8 @@ clean:
 	fi
 
 test:
+	go vet ./internal/*
+	go vet ./cmd/*
 	go test $(TESTING_DIR) -v
 create-docker-db:
 	docker run --name $(DOCKER_DB_NAME) \

@@ -142,16 +142,19 @@ func (s *TycoonService) Close() {
 }
 
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
+	if len(r.Players) == 0 {
+		return nil
+	}
 
 	queryHeader := `
-		            INSERT INTO player (
-				player_id,
-				total_currency,
-				rebirths,
-				placed_objects,
-				current_server_id,
-				date_last_updated)
-		            VALUES `
+				INSERT INTO player (
+					player_id,
+					total_currency,
+					rebirths,
+					placed_objects,
+					current_server_id,
+					date_last_updated)
+				VALUES `
 
 	var queryPlaceholders []string
 	var args []any
@@ -160,7 +163,7 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 	for _, player := range r.Players {
 		placedObjects, err := json.Marshal(player.PlacedObjects)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to marshal placed_objects: %w", err)
 		}
 
 		// Create the placeholder string for this specific player
@@ -170,7 +173,7 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 
 		queryPlaceholders = append(queryPlaceholders, placeholder)
 
-		// Add the actual variables to the arguments slice
+		// Add the actual variables to the arguments slice (parameterized to prevent SQL injection)
 		args = append(args,
 			player.PlayerId,
 			player.Stats.TotalCurrency,
@@ -185,24 +188,24 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 
 	queryTail := `
 				ON CONFLICT(player_id)
-		            DO UPDATE SET
+				DO UPDATE SET
 					total_currency = EXCLUDED.total_currency,
-		                rebirths = EXCLUDED.rebirths,
+					rebirths = EXCLUDED.rebirths,
 					placed_objects = EXCLUDED.placed_objects,
 					current_server_id = EXCLUDED.current_server_id,
 					date_last_updated = EXCLUDED.date_last_updated
-		            `
+	`
 
 	// Join the placeholders with commas
 	valuesSection := strings.Join(queryPlaceholders, ",")
 	query := queryHeader + valuesSection + queryTail
 
-	// Pass the arguments alongside the query string
+	// Pass the arguments alongside the query string (parameterized, safe from injection)
 	err := s.repo.InsertUser(query, args...)
 	if err != nil {
-		return fmt.Errorf("failed to insert player, error: %s", err)
+		return fmt.Errorf("failed to insert players: %w", err)
 	}
 
-	fmt.Printf("Affected players: %d\n", len(r.Players))
+	log.Printf("Successfully inserted/updated %d players for server %s", len(r.Players), r.ServerId)
 	return nil
 }
