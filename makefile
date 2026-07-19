@@ -35,6 +35,12 @@ test:
 	go vet ./internal/*
 	go vet ./cmd/*
 	go test $(TESTING_DIR) -v
+
+#To run a make analysis on the proj
+escape-analysis:
+	@echo "Running escape analysis"
+	go build -o $(BIN_DIR)/$(BINARY_NAME) -gcflags="-m" ./cmd/golang-proj 2>&1 | grep "escapes to heap"
+
 create-docker-db:
 	docker run --name $(DOCKER_DB_NAME) \
 	   -e POSTGRES_PASSWORD=$(DOCKER_PASS) \
