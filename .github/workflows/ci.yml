@@ -15,8 +15,8 @@ jobs:
         with:
           go-version: '1.26.5'
 
-      - name: Run make run(builds and runs)
-        run: make run
+      - name: Run make build
+        run: make build
 
       - name: Runs test cases
         run: make test
