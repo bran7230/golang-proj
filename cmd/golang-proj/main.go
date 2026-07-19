@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// to modify this, go to internal/server/routes.go
-	router := server.SetupRoutesWithDB(tycoonSvc, db)
+	router := server.SetupRoutes(tycoonSvc)
 
 	// create http.Server with sensible timeouts
 	srv := &http.Server{
