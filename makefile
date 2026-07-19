@@ -1,5 +1,33 @@
 # Create the initial postgres container
 # NOTE: Removed sudo so Docker Desktop can see the container
+-include .env
+export
+# Define paths
+BINARY_NAME := golang-proj
+CMD_DIR := ./cmd/golang-proj
+BIN_DIR := bin
+
+# Build target
+build:
+	@echo "Building $(BINARY_NAME)..."
+	@mkdir -p $(BIN_DIR)
+# Build the package located in CMD_DIR and output to BIN_DIR/BINARY_NAME
+	go build -o $(BIN_DIR)/$(BINARY_NAME) $(CMD_DIR)
+
+# Run target
+run: build
+	./$(BIN_DIR)/$(BINARY_NAME)
+
+# Clean target
+clean:
+	@if [ -d "$(BIN_DIR)" ]; then \
+		echo "Cleaning $(BIN_DIR)..."; \
+		rm -rf $(BIN_DIR)/*; \
+		echo "Bin cleaned!"; \
+	else \
+		echo "Directory '$(BIN_DIR)' does not exist, nothing to clean."; \
+	fi
+
 create-docker-db:
 	docker run --name $(DOCKER_DB_NAME) \
 	   -e POSTGRES_PASSWORD=$(DOCKER_PASS) \

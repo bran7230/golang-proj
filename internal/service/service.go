@@ -91,7 +91,7 @@ func (s *TycoonService) Close() {
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 
 	queryHeader := `
-	            INSERT INTO players (
+	            INSERT INTO player (
 				player_id,
 				total_currency,
 				rebirths,
