@@ -1,6 +1,7 @@
 package main
 
 import (
+	"golang-proj/internal/repository"
 	"golang-proj/internal/server"
 	"golang-proj/internal/service"
 	"log"
@@ -14,6 +15,12 @@ func main() {
 		log.Fatalf("Error initiating database connection. Error: %s", err.Error())
 	}
 
+	defer func(db *repository.Database) {
+		err := db.Close()
+		if err != nil {
+			log.Fatalf("error closing database connection. Error: %s", err.Error())
+		}
+	}(db)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -25,6 +32,8 @@ func main() {
 		log.Fatal("Error injecting db into service.")
 		return
 	}
+
+	defer tycoonSvc.Close()
 
 	// to modify this, go to internal/server/routes.go
 	router := server.SetupRoutes(tycoonSvc)

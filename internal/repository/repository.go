@@ -12,7 +12,7 @@ import (
 )
 
 type Repository interface {
-	InsertUser(dbQuery string, args ...string) error
+	InsertUser(dbQuery string, args ...any) error
 }
 
 type Database struct {
@@ -27,7 +27,7 @@ func ConnectToDatabase(dsn string) (*Database, error) {
 	// init connection with connection pool
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Could not initiate connection pool. Error: %s", err.Error())
+		return nil, fmt.Errorf("could not initiate connection pool. Error: %s", err.Error())
 	}
 	db := stdlib.OpenDBFromPool(pool)
 
@@ -36,7 +36,7 @@ func ConnectToDatabase(dsn string) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Sucessfully connected to database.")
+	log.Println("Successfully connected to database.")
 
 	// limit connections
 	db.SetMaxOpenConns(25)
@@ -45,11 +45,19 @@ func ConnectToDatabase(dsn string) (*Database, error) {
 	return NewServer(db), nil
 }
 
-func (s *Database) InsertUser(dbQuery string, args ...string) error {
+// Close expose the connection closure to the rest of the application
+func (s *Database) Close() error {
+	if s.db != nil {
+		return s.db.Close()
+	}
+	return nil
+}
+
+func (s *Database) InsertUser(dbQuery string, args ...any) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("database repository is not initialized")
 	}
-	_, err := s.db.Exec(dbQuery)
+	_, err := s.db.Exec(dbQuery, args...)
 	if err != nil {
 		return err
 	}

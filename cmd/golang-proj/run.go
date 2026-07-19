@@ -15,8 +15,7 @@ func InitiateDatabaseConnection() (*repository.Database, error) {
 
 	db, databaseConError := repository.ConnectToDatabase(dsn)
 	if databaseConError != nil {
-		return nil, fmt.Errorf("Error initializing database connection: %s", databaseConError)
+		return nil, fmt.Errorf("error initializing database connection: %s", databaseConError)
 	}
-
 	return db, nil
 }

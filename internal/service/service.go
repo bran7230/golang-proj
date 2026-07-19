@@ -8,6 +8,7 @@ import (
 	"golang-proj/internal/repository"
 	"log"
 	"strings"
+	"sync"
 )
 
 var ErrQueueFull = errors.New("save queue is full, system is overloaded")
@@ -19,6 +20,7 @@ type TycoonProcessor interface {
 type TycoonService struct {
 	repo  repository.Repository
 	queue chan *models.TycoonRequest
+	wg    sync.WaitGroup
 }
 
 func NewTycoonService(repo repository.Repository, queueSize, workerCount int) *TycoonService {
@@ -73,11 +75,17 @@ func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 }
 
 func (s *TycoonService) worker() {
+	defer s.wg.Done()
 	for r := range s.queue {
 		if err := s.insertData(r); err != nil {
 			log.Printf("Worker failed to process data: %v", err)
 		}
 	}
+}
+
+func (s *TycoonService) Close() {
+	close(s.queue)
+	s.wg.Wait()
 }
 
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
@@ -90,9 +98,37 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 				placed_objects,
 				current_server_id,
 				date_last_updated)
-	            VALUES`
+	            VALUES `
 
-	queryValues := make([]string, len(r.Players))
+	var queryPlaceholders []string
+	var args []any
+
+	placeholderIndex := 1
+	for _, player := range r.Players {
+		placedObjects, err := json.Marshal(player.PlacedObjects)
+		if err != nil {
+			return err
+		}
+
+		// Create the placeholder string for this specific player
+		placeholder := fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)",
+			placeholderIndex, placeholderIndex+1, placeholderIndex+2,
+			placeholderIndex+3, placeholderIndex+4, placeholderIndex+5)
+
+		queryPlaceholders = append(queryPlaceholders, placeholder)
+
+		// Add the actual variables to the arguments slice
+		args = append(args,
+			player.PlayerId,
+			player.Stats.TotalCurrency,
+			player.Stats.Rebirths,
+			placedObjects,
+			r.ServerId,
+			r.Timestamp,
+		)
+
+		placeholderIndex += 6
+	}
 
 	queryTail := `
 				ON CONFLICT(player_id)
@@ -103,26 +139,13 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 					current_server_id = EXCLUDED.current_server_id,
 					date_last_updated = EXCLUDED.date_last_updated
 	            `
-	for i, player := range r.Players {
-		placedObjects, err := json.Marshal(player.PlacedObjects)
-		if err != nil {
-			return err
-		}
-		// Escape any single quotes in the JSON string to avoid SQL syntax errors
-		placedEsc := strings.ReplaceAll(string(placedObjects), "'", "''")
-		// Format a single row of VALUES. Use explicit formatting to avoid fmt.Sprintf extra-args behavior.
-		queryValues[i] = fmt.Sprintf("(%d,%d,%d,'%s','%s','%s')", player.PlayerId,
-			player.Stats.TotalCurrency,
-			player.Stats.Rebirths,
-			placedEsc,
-			r.ServerId,
-			r.Timestamp.Format("2006-01-02 15:04:05"))
-	}
 
-	valuesSection := strings.Join(queryValues, ",")
-	query := queryHeader + "\n" + valuesSection + "\n" + queryTail
+	// Join the placeholders with commas
+	valuesSection := strings.Join(queryPlaceholders, ",")
+	query := queryHeader + valuesSection + queryTail
 
-	err := s.repo.InsertUser(query)
+	// Pass the arguments alongside the query string
+	err := s.repo.InsertUser(query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to insert player, error: %s", err)
 	}
