@@ -6,6 +6,7 @@ export
 BINARY_NAME := golang-proj
 CMD_DIR := ./cmd/golang-proj
 BIN_DIR := bin
+TESTING_DIR := ./internal/tests
 
 # Build target
 build:
@@ -28,6 +29,8 @@ clean:
 		echo "Directory '$(BIN_DIR)' does not exist, nothing to clean."; \
 	fi
 
+test:
+	go test $(TESTING_DIR) -v
 create-docker-db:
 	docker run --name $(DOCKER_DB_NAME) \
 	   -e POSTGRES_PASSWORD=$(DOCKER_PASS) \

@@ -290,7 +290,7 @@ func TestHandleSaves(t *testing.T) {
 		{
 			name: "Json file is too large(more than 1mb)",
 			reqBody: models.TycoonRequest{
-				ServerId:  strings.Repeat("A", 2<<24),
+				ServerId:  strings.Repeat("A", 1<<26),
 				Timestamp: time.Now(),
 				Players: []models.Player{
 					{

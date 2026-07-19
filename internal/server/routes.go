@@ -11,5 +11,11 @@ func SetupRoutes(tycoonSvc service.TycoonProcessor) *http.ServeMux {
 
 	mux.HandleFunc("POST /", HandleSaves(tycoonSvc))
 
+	// liveness and readiness endpoints
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+
 	return mux
 }

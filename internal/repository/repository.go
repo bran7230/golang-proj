@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -41,6 +42,8 @@ func ConnectToDatabase(dsn string) (*Database, error) {
 	// limit connections
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
+	// set a reasonable max lifetime for connections
+	db.SetConnMaxLifetime(5 * time.Minute)
 
 	return NewServer(db), nil
 }

@@ -38,6 +38,13 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			return
 		}
 
+		if tycoonSvc == nil {
+			err := sendError(w, http.StatusInternalServerError, "fatal error, our validation is currently down. Please try again later")
+			if err != nil {
+				return
+			}
+		}
+
 		if err := tycoonSvc.ProcessTycoonData(&requestData); err != nil {
 			if errors.Is(err, service.ErrQueueFull) {
 				err := sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")

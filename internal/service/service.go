@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 var ErrQueueFull = errors.New("save queue is full, system is overloaded")
@@ -18,23 +20,55 @@ type TycoonProcessor interface {
 }
 
 type TycoonService struct {
-	repo  repository.Repository
-	queue chan *models.TycoonRequest
-	wg    sync.WaitGroup
+	repo   repository.Repository
+	queue  chan *models.TycoonRequest
+	wg     sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
-func NewTycoonService(repo repository.Repository, queueSize, workerCount int) *TycoonService {
+// NewTycoonService creates a TycoonService with worker goroutines. Returns an error if repo is nil.
+func NewTycoonService(repo repository.Repository, queueSize, workerCount int) (*TycoonService, error) {
+	if repo == nil {
+		return nil, fmt.Errorf("repository cannot be nil")
+	}
+	if queueSize <= 0 {
+		queueSize = 1000
+	}
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	s := &TycoonService{
-		repo:  repo,
-		queue: make(chan *models.TycoonRequest, queueSize),
+		repo:   repo,
+		queue:  make(chan *models.TycoonRequest, queueSize),
+		ctx:    ctx,
+		cancel: cancel,
 	}
 
 	// Spin up the background worker pool
-	for range workerCount {
+	for i := 0; i < workerCount; i++ {
+		s.wg.Add(1)
 		go s.worker()
 	}
 
-	return s
+	// background goroutine to log queue length periodically (optional)
+	go func() {
+		t := time.NewTicker(30 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case <-t.C:
+				log.Printf("tycoon queue: len=%d cap=%d", len(s.queue), cap(s.queue))
+			}
+		}
+	}()
+
+	return s, nil
 }
 
 // ValidateTycoonRequest uses the request to verify that they have the required fields.
@@ -76,29 +110,48 @@ func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 
 func (s *TycoonService) worker() {
 	defer s.wg.Done()
-	for r := range s.queue {
-		if err := s.insertData(r); err != nil {
-			log.Printf("Worker failed to process data: %v", err)
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case r, ok := <-s.queue:
+			if !ok {
+				return
+			}
+			if err := s.insertData(r); err != nil {
+				log.Printf("Worker failed to process data: %v", err)
+			}
 		}
 	}
 }
 
 func (s *TycoonService) Close() {
+	// cancel background tasks and stop accepting new work
+	if s.cancel != nil {
+		s.cancel()
+	}
+	// close the queue to allow workers to drain remaining items
+	select {
+	case <-s.ctx.Done():
+		// already cancelled
+	default:
+	}
 	close(s.queue)
+	// wait for workers to finish
 	s.wg.Wait()
 }
 
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 
 	queryHeader := `
-	            INSERT INTO player (
+		            INSERT INTO player (
 				player_id,
 				total_currency,
 				rebirths,
 				placed_objects,
 				current_server_id,
 				date_last_updated)
-	            VALUES `
+		            VALUES `
 
 	var queryPlaceholders []string
 	var args []any
@@ -132,13 +185,13 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 
 	queryTail := `
 				ON CONFLICT(player_id)
-	            DO UPDATE SET
+		            DO UPDATE SET
 					total_currency = EXCLUDED.total_currency,
-	                rebirths = EXCLUDED.rebirths,
+		                rebirths = EXCLUDED.rebirths,
 					placed_objects = EXCLUDED.placed_objects,
 					current_server_id = EXCLUDED.current_server_id,
 					date_last_updated = EXCLUDED.date_last_updated
-	            `
+		            `
 
 	// Join the placeholders with commas
 	valuesSection := strings.Join(queryPlaceholders, ",")
