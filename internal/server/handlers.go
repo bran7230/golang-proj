@@ -9,7 +9,7 @@ import (
 	"golang-proj/internal/service"
 )
 
-// TODO: Implement hmac-sha256 encoding in the response / requests.
+// HandleSaves TODO: Implement hmac-sha256 encoding in the response / requests.
 func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requestData, decodingErr := decode[models.TycoonRequest](w, r)
@@ -17,24 +17,39 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 		if decodingErr != nil {
 			var maxBytesError *http.MaxBytesError
 			if errors.As(decodingErr, &maxBytesError) {
-				sendError(w, http.StatusRequestEntityTooLarge, decodingErr.Error())
+				err := sendError(w, http.StatusRequestEntityTooLarge, decodingErr.Error())
+				if err != nil {
+					return
+				}
 				return
 			}
-			sendError(w, http.StatusBadRequest, decodingErr.Error())
+			err := sendError(w, http.StatusBadRequest, decodingErr.Error())
+			if err != nil {
+				return
+			}
 			return
 		}
 
 		if err := service.ValidateTycoonRequest(&requestData); err != nil {
-			sendError(w, http.StatusBadRequest, err.Error())
+			err := sendError(w, http.StatusBadRequest, err.Error())
+			if err != nil {
+				return
+			}
 			return
 		}
 
 		if err := tycoonSvc.ProcessTycoonData(&requestData); err != nil {
 			if errors.Is(err, service.ErrQueueFull) {
-				sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
+				err := sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
+				if err != nil {
+					return
+				}
 				return
 			}
-			sendError(w, http.StatusInternalServerError, err.Error())
+			err := sendError(w, http.StatusInternalServerError, err.Error())
+			if err != nil {
+				return
+			}
 			return
 		}
 

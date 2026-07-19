@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var ErrQueueFull = errors.New("save queue is full, system is overloaded.")
+var ErrQueueFull = errors.New("save queue is full, system is overloaded")
 
 type TycoonProcessor interface {
 	ProcessTycoonData(r *models.TycoonRequest) error
@@ -28,29 +28,31 @@ func NewTycoonService(repo repository.Repository, queueSize, workerCount int) *T
 	}
 
 	// Spin up the background worker pool
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		go s.worker()
 	}
 
 	return s
 }
 
+// ValidateTycoonRequest uses the request to verify that they have the required fields.
+// This runs after the client receives a 202(accepted) response code.
 func ValidateTycoonRequest(r *models.TycoonRequest) error {
 
 	if r.ServerId == "" {
-		return fmt.Errorf("Missing server id / invalid.")
+		return fmt.Errorf("missing server id / invalid")
 	}
 
 	if r.Timestamp.IsZero() {
-		return fmt.Errorf("Timestamp is missing / invalid.")
+		return fmt.Errorf("timestamp is missing / invalid")
 	}
 
 	for _, player := range r.Players {
 		if player.PlayerId <= 0 {
-			return fmt.Errorf("Player id is null or <= 0.")
+			return fmt.Errorf("player id is null or <= 0")
 		}
 		if player.Stats == nil {
-			return fmt.Errorf("Player has no stats(it's null).")
+			return fmt.Errorf("player has no stats(it's null)")
 		}
 	}
 
@@ -59,7 +61,7 @@ func ValidateTycoonRequest(r *models.TycoonRequest) error {
 
 func (s *TycoonService) ProcessTycoonData(r *models.TycoonRequest) error {
 	if r == nil {
-		return fmt.Errorf("Request cannot be processed / is null.")
+		return fmt.Errorf("request cannot be processed / is null")
 	}
 	// queue the requests
 	select {
