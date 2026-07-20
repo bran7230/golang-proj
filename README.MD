@@ -17,7 +17,7 @@ To clean your docker instance(db) use: sudo docker rm -f my-tycoon-db(or your do
 
    - rebirths : INTEGER
 
-   - placed_objects : JSONB(so we can index and it's faster to read, not write.)
+   - placed_objects : JSONB(so we can index, and it's faster to read, not write.)
 
    - current_server_id : TEXT
 
@@ -37,6 +37,7 @@ Create a `.env` file in the root directory with the following variables:
 | `POSTGRESS_DB_NAME`          | Database name             | `tycoon_db`                                                               |
 | `DATABASE_CONNECTION_STRING` | PostgreSQL connection URL | `postgres://postgres:<password>@127.0.0.1:3307/tycoon_db?sslmode=disable` |
 | `APIKEY`                     | API authentication key    | Generate with `openssl rand -hex 32`                                      |
+| `HMAC_KEY`                   | Hmac key                  | Generate with `openssl rand -hex 32`                                      |
 
 **Generate secure credentials:**
 ```bash
