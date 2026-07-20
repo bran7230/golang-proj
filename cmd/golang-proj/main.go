@@ -24,9 +24,14 @@ func main() {
 	}
 
 	apiKey := os.Getenv("APIKEY")
-	log.Printf("Api key: %s", apiKey)
 	if apiKey == "" {
 		log.Fatalf("Cannot find APIKEY in env")
+		return
+	}
+
+	secretKey := os.Getenv("HMAC_KEY")
+	if secretKey == "" {
+		log.Fatalf("Cannot find the HMAC key")
 		return
 	}
 
@@ -53,7 +58,7 @@ func main() {
 	}
 
 	// to modify this, go to internal/server/routes.go
-	router := server.SetupRoutes(tycoonSvc, apiKey)
+	router := server.SetupRoutes(tycoonSvc, apiKey, secretKey)
 
 	// create http.Server with sensible timeouts
 	srv := &http.Server{

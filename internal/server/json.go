@@ -55,22 +55,27 @@ func encode[T any](w http.ResponseWriter, status int, v T) error {
 	return nil
 }
 
-func decode[T any](w http.ResponseWriter, r *http.Request) (T, error) {
+// decode was updated to take in a secret key, hmacSignature to decode and verify that the body has the correct data,
+// and the header has the correct signature.
+func decode[T any](bodyBytes []byte, secretKey []byte, hmacSignature string) (T, error) {
 	var v T
 
-	// enforce limits to stop a common DOS atatck.(1mb limit or 1048576 bytes)
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	b, err := verify(bodyBytes, secretKey, hmacSignature)
+	if err != nil {
+		return v, err
+	}
 
-	dec := json.NewDecoder(r.Body)
-	// can change to XML if needed.
-	// use xml.NewDecorder() instead.
-	if err := dec.Decode(&v); err != nil {
+	if !b {
+		return v, fmt.Errorf("invalid data, hmac does not match")
+	}
+
+	if err := json.Unmarshal(bodyBytes, &v); err != nil {
 		return v, fmt.Errorf("decode json: %w", err)
 	}
 	return v, nil
 }
 
-// helpful wrapper,
+// SendError helpful wrapper,
 // you can change this as needed ie: you need to pass back the requests response(or par of it) to the client.
 func SendError(w http.ResponseWriter, status int, msg string) error {
 	payload := map[string]string{"error": msg}

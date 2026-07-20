@@ -2,11 +2,15 @@ package server
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"golang-proj/internal/models"
 	"golang-proj/internal/server"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +20,13 @@ type stubTycoonService struct{}
 
 func (s stubTycoonService) ProcessTycoonData(*models.TycoonRequest) error {
 	return nil
+}
+
+// generateHMAC creates an HMAC-SHA256 signature for testing
+func generateHMAC(bodyBytes []byte, secretKey string) string {
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write(bodyBytes)
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // test commit
@@ -315,6 +326,11 @@ func TestHandleSaves(t *testing.T) {
 		},
 	}
 
+	secretKey := os.Getenv("HMAC_KEY")
+
+	if secretKey == "" {
+		secretKey = "some-cool-secret"
+	}
 	// iterate over each test case
 	for _, tc := range tests {
 		// run eac test case as a sub case(isolated test)
@@ -334,11 +350,15 @@ func TestHandleSaves(t *testing.T) {
 			// json type
 			req.Header.Set("Content-Type", "application/json")
 
+			// Generate the HMAC
+			hmacSig := generateHMAC(bodyBytes, secretKey)
+			req.Header.Set("HMAC-Signature", hmacSig)
+
 			// setup recorder
 			rr := httptest.NewRecorder()
 
-			// test the endpoint
-			handler := server.HandleSaves(stubTycoonService{})
+			// test the endpoint with the secret key from env
+			handler := server.HandleSaves(stubTycoonService{}, []byte(secretKey))
 			handler.ServeHTTP(rr, req)
 
 			// validate status code against the expected value in the struct
