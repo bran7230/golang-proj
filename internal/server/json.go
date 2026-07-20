@@ -70,7 +70,7 @@ func decode[T any](w http.ResponseWriter, r *http.Request) (T, error) {
 	return v, nil
 }
 
-// helpful wrapper,
+// SendError helpful wrapper,
 // you can change this as needed ie: you need to pass back the requests response(or par of it) to the client.
 func SendError(w http.ResponseWriter, status int, msg string) error {
 	payload := map[string]string{"error": msg}
