@@ -1,13 +1,16 @@
 package server
 
 import (
+	"golang-proj/internal/service"
 	"net/http"
 )
 
-func SetupRoutes() *http.ServeMux {
+// SetupRoutes SetupRoutesWithDB creates routes with database health checks for readiness probe
+func SetupRoutes(tycoonSvc service.TycoonProcessor, apiKey string) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /", HandleSaves)
+	handleSavesEndpoint := AuthMiddleware(HandleSaves(tycoonSvc), apiKey)
+	mux.Handle("POST /", handleSavesEndpoint)
 
 	return mux
 }
