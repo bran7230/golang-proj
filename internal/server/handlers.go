@@ -2,11 +2,10 @@ package server
 
 import (
 	"errors"
-	"log"
-	"net/http"
-
 	"golang-proj/internal/models"
 	"golang-proj/internal/service"
+	"log"
+	"net/http"
 )
 
 // HandleSaves TODO: Implement hmac-sha256 encoding in the response / requests.
@@ -17,13 +16,13 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 		if decodingErr != nil {
 			var maxBytesError *http.MaxBytesError
 			if errors.As(decodingErr, &maxBytesError) {
-				err := sendError(w, http.StatusRequestEntityTooLarge, decodingErr.Error())
+				err := SendError(w, http.StatusRequestEntityTooLarge, decodingErr.Error())
 				if err != nil {
 					return
 				}
 				return
 			}
-			err := sendError(w, http.StatusBadRequest, decodingErr.Error())
+			err := SendError(w, http.StatusBadRequest, decodingErr.Error())
 			if err != nil {
 				return
 			}
@@ -31,7 +30,7 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 		}
 
 		if err := service.ValidateTycoonRequest(&requestData); err != nil {
-			err := sendError(w, http.StatusBadRequest, err.Error())
+			err := SendError(w, http.StatusBadRequest, err.Error())
 			if err != nil {
 				return
 			}
@@ -39,7 +38,7 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 		}
 
 		if tycoonSvc == nil {
-			err := sendError(w, http.StatusInternalServerError, "fatal error, our validation is currently down. Please try again later")
+			err := SendError(w, http.StatusInternalServerError, "fatal error, our validation is currently down. Please try again later")
 			if err != nil {
 				return
 			}
@@ -47,13 +46,13 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 
 		if err := tycoonSvc.ProcessTycoonData(&requestData); err != nil {
 			if errors.Is(err, service.ErrQueueFull) {
-				err := sendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
+				err := SendError(w, http.StatusTooManyRequests, "Server is busy, please try again later.")
 				if err != nil {
 					return
 				}
 				return
 			}
-			err := sendError(w, http.StatusInternalServerError, err.Error())
+			err := SendError(w, http.StatusInternalServerError, err.Error())
 			if err != nil {
 				return
 			}
