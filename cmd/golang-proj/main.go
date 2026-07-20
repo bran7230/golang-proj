@@ -16,6 +16,20 @@ import (
 )
 
 func main() {
+
+	// init from .env vars
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	apiKey := os.Getenv("APIKEY")
+	log.Printf("Api key: %s", apiKey)
+	if apiKey == "" {
+		log.Fatalf("Cannot find APIKEY in env")
+		return
+	}
+
 	db, err := InitiateDatabaseConnection()
 	if err != nil {
 		log.Fatalf("Error initiating database connection: %v", err)
@@ -31,11 +45,6 @@ func main() {
 		}
 	}()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
 	// setup data queue
 	tycoonSvc, err := service.NewTycoonService(db, 10000, 10)
 	if err != nil {
@@ -44,7 +53,7 @@ func main() {
 	}
 
 	// to modify this, go to internal/server/routes.go
-	router := server.SetupRoutes(tycoonSvc)
+	router := server.SetupRoutes(tycoonSvc, apiKey)
 
 	// create http.Server with sensible timeouts
 	srv := &http.Server{

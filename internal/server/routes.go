@@ -6,10 +6,11 @@ import (
 )
 
 // SetupRoutes SetupRoutesWithDB creates routes with database health checks for readiness probe
-func SetupRoutes(tycoonSvc service.TycoonProcessor) *http.ServeMux {
+func SetupRoutes(tycoonSvc service.TycoonProcessor, apiKey string) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /", HandleSaves(tycoonSvc))
+	handleSavesEndpoint := AuthMiddleware(HandleSaves(tycoonSvc), apiKey)
+	mux.Handle("POST /", handleSavesEndpoint)
 
 	return mux
 }
