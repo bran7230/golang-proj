@@ -3,16 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"golang-proj/internal/server"
+	"golang-proj/internal/service"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	_ "golang-proj/internal/repository"
-	"golang-proj/internal/server"
-	"golang-proj/internal/service"
 )
 
 func main() {
@@ -36,7 +34,7 @@ func main() {
 
 	secretKey := os.Getenv("HMAC_KEY")
 	if secretKey == "" {
-		log.Fatalf("Cannot find the HMAC key")
+		slog.Error("Cannot find the HMAC key")
 		return
 	}
 
@@ -48,7 +46,6 @@ func main() {
 		))
 		return
 	}
-
 
 	// ensure DB closed on exit; log errors but don't os.Exit from deferred cleanup
 	defer func() {
