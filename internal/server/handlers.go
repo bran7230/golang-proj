@@ -5,7 +5,7 @@ import (
 	"golang-proj/internal/models"
 	"golang-proj/internal/service"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -50,7 +50,6 @@ func HandleSaves(tycoonSvc service.TycoonProcessor, secretKey []byte) http.Handl
 			}
 			return
 		}
-
 
 		if err := service.ValidateTycoonRequest(&requestData); err != nil {
 			err := SendError(w, http.StatusBadRequest, err.Error())
