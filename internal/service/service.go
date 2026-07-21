@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"golang-proj/internal/models"
 	"golang-proj/internal/repository"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -62,8 +62,6 @@ func NewTycoonService(repo repository.Repository, queueSize, workerCount int) (*
 			select {
 			case <-s.ctx.Done():
 				return
-			case <-t.C:
-				log.Printf("tycoon queue: len=%d cap=%d", len(s.queue), cap(s.queue))
 			}
 		}
 	}()
@@ -119,7 +117,7 @@ func (s *TycoonService) worker() {
 				return
 			}
 			if err := s.insertData(r); err != nil {
-				log.Printf("Worker failed to process data: %v", err)
+				slog.Warn("Worker failed to process data", "error", err.Error())
 			}
 		}
 	}
@@ -206,6 +204,6 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 		return fmt.Errorf("failed to insert players: %w", err)
 	}
 
-	log.Printf("Successfully inserted/updated %d players for server %s", len(r.Players), r.ServerId)
+	slog.Debug("Successfully inserted/updated players", "playerCount", len(r.Players), "serverId", r.ServerId)
 	return nil
 }
