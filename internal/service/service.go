@@ -204,6 +204,6 @@ func (s *TycoonService) insertData(r *models.TycoonRequest) error {
 		return fmt.Errorf("failed to insert players: %w", err)
 	}
 
-	slog.Debug("Successfully inserted/updated players", "playerCount", len(r.Players), "serverId", r.ServerId)
+	slog.Debug("Successfully inserted/updated players", "playerCount", len(r.Players), "serverId", r.ServerId, "serverTimestamp", r.Timestamp)
 	return nil
 }
