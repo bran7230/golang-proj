@@ -40,6 +40,7 @@ func main() {
 		log.Fatalf("Error initiating database connection: %v", err)
 	}
 
+
 	// ensure DB closed on exit; log errors but don't os.Exit from deferred cleanup
 	defer func() {
 		if db == nil {
