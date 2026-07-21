@@ -29,6 +29,7 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			return
 		}
 
+
 		if err := service.ValidateTycoonRequest(&requestData); err != nil {
 			err := SendError(w, http.StatusBadRequest, err.Error())
 			if err != nil {
