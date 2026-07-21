@@ -80,7 +80,7 @@ func main() {
 	// run server in goroutine so we can listen for shutdown signals
 	serverErrors := make(chan error, 1)
 	go func() {
-		slog.Info("Starting server.", "port", port)
+		slog.Debug("Starting server.", "port", port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrors <- err
 		} else {

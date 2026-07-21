@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -65,7 +65,7 @@ func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Successfully connected to database.")
+	slog.Debug("Successfully connected to database.")
 
 	// configure connection pool
 	if cfg.MaxOpenConns <= 0 {
@@ -86,8 +86,13 @@ func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
-	log.Printf("Database pool configured: MaxOpenConns=%d MaxIdleConns=%d ConnMaxLifetime=%s ConnMaxIdleTime=%s",
-		cfg.MaxOpenConns, cfg.MaxIdleConns, cfg.ConnMaxLifetime, cfg.ConnMaxIdleTime)
+	slog.Debug("Database pool configured", slog.Group(
+		"databaseConfiguration",
+		slog.Any("maxIdleCons", cfg.MaxIdleConns),
+		slog.Any("maxOpenCons", cfg.MaxOpenConns),
+		slog.Any("maxConLifetime", cfg.ConnMaxLifetime),
+		slog.Any("maxConIdleTime", cfg.ConnMaxIdleTime)),
+	)
 
 	return NewServer(db), nil
 }
