@@ -10,7 +10,7 @@ func AuthMiddleware(originalHandler http.Handler, apiKey string) http.Handler {
 		if r.Header.Get("x-api-key") != apiKey {
 			err := SendError(w, http.StatusUnauthorized, "error, invalid auth key")
 			if err != nil {
-				fmt.Printf("error: %s\n", err.Error())
+				fmt.Printf("auth middleware error: %s\n", err.Error())
 				return
 			}
 			return

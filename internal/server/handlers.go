@@ -4,7 +4,7 @@ import (
 	"errors"
 	"golang-proj/internal/models"
 	"golang-proj/internal/service"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -63,14 +63,16 @@ func HandleSaves(tycoonSvc service.TycoonProcessor) http.HandlerFunc {
 			"message": "Accepted payload, processing now!",
 		}
 		if err := encode(w, http.StatusAccepted, response); err != nil {
-			log.Print("Failed to encode response: ", err)
+			slog.Error("Failed to encode response", "error", err.Error(), slog.Group("response",
+				slog.Any("response", response),
+			))
 
 			http.Error(w, "Error parsing data.", http.StatusInternalServerError)
 			return
 		}
 
 		if tycoonSvc == nil {
-			log.Print("Tycoon service dependency is not configured")
+			slog.Error("Tycoon service dependency is not configured")
 			return
 		}
 	}

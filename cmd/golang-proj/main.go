@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,7 +16,12 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
 
+	slog.SetDefault(logger)
 	// init from .env vars
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -24,15 +29,18 @@ func main() {
 	}
 
 	apiKey := os.Getenv("APIKEY")
-	log.Printf("Api key: %s", apiKey)
 	if apiKey == "" {
-		log.Fatalf("Cannot find APIKEY in env")
+		slog.Error("api key not found in .env")
 		return
 	}
 
 	db, err := InitiateDatabaseConnection()
 	if err != nil {
-		log.Fatalf("Error initiating database connection: %v", err)
+		slog.Error("Error initiating database connection", slog.Group(
+			"database connection error",
+			slog.String("error", err.Error()),
+		))
+		return
 	}
 
 	// ensure DB closed on exit; log errors but don't os.Exit from deferred cleanup
@@ -41,14 +49,15 @@ func main() {
 			return
 		}
 		if err := db.Close(); err != nil {
-			log.Printf("error closing database connection: %v", err)
+			slog.Error("error closing database connection.", "error", err.Error())
+			return
 		}
 	}()
 
 	// setup data queue
 	tycoonSvc, err := service.NewTycoonService(db, 10000, 10)
 	if err != nil {
-		log.Fatalf("Error creating tycoon service: %v", err)
+		slog.Error("Error creating tycoon service.", "error", err.Error())
 		return
 	}
 
@@ -67,7 +76,7 @@ func main() {
 	// run server in goroutine so we can listen for shutdown signals
 	serverErrors := make(chan error, 1)
 	go func() {
-		log.Printf("Starting server on :%s...", port)
+		slog.Info("Starting server.", "port", port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrors <- err
 		} else {
@@ -81,15 +90,16 @@ func main() {
 
 	select {
 	case sig := <-quit:
-		log.Printf("Received signal %v. Shutting down...", sig)
+		slog.Debug("Received signal. Shutting down...", "signal", sig)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("Server Shutdown error: %v", err)
+			slog.Error("Server Shutdown error.", "error", err.Error())
+			return
 		}
 	case err := <-serverErrors:
 		if err != nil {
-			log.Fatalf("Server error: %v", err)
+			slog.Error("Fatal server error", "error", err.Error())
 		}
 	}
 
@@ -97,5 +107,5 @@ func main() {
 	// tycoonSvc.Close() has no error return in existing code, keep same call
 	tycoonSvc.Close()
 
-	log.Println("Shutdown complete.")
+	slog.Debug("Server shut down complete.")
 }
