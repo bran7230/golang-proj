@@ -20,15 +20,17 @@ func main() {
 	}))
 
 	slog.SetDefault(logger)
+
 	// init from .env vars
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+		slog.Warn("Port not found in env. Defaulting port", "portDefault", port)
 	}
 
 	apiKey := os.Getenv("APIKEY")
 	if apiKey == "" {
-		slog.Error("api key not found in .env")
+		slog.Error("Api key not found in .env")
 		return
 	}
 
@@ -53,7 +55,7 @@ func main() {
 			return
 		}
 		if err := db.Close(); err != nil {
-			slog.Error("error closing database connection.", "error", err.Error())
+			slog.Error("Error closing database connection.", "error", err.Error())
 			return
 		}
 	}()
@@ -94,7 +96,7 @@ func main() {
 
 	select {
 	case sig := <-quit:
-		slog.Debug("Received signal. Shutting down...", "signal", sig)
+		slog.Info("Received signal. Shutting down...", "signal", sig)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
@@ -111,5 +113,5 @@ func main() {
 	// tycoonSvc.Close() has no error return in existing code, keep same call
 	tycoonSvc.Close()
 
-	slog.Debug("Server shut down complete.")
+	slog.Info("Server shut down complete.")
 }
