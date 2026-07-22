@@ -44,16 +44,16 @@ func NewServer(db *sql.DB) *Database {
 }
 
 // ConnectToDatabase initializes a PostgreSQL connection pool with the given config
-func ConnectToDatabase(dsn string) (*Database, error) {
+func ConnectToDatabase(dsn string) (*Database, context.Context, error) {
 	return ConnectToDatabaseWithConfig(dsn, DefaultDbConfig())
 }
 
 // ConnectToDatabaseWithConfig initializes a PostgreSQL connection pool with custom config
-func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
+func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, context.Context, error) {
 	// init connection with pgxpool
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		return nil, fmt.Errorf("could not initiate connection pool: %w", err)
+		return nil, nil, fmt.Errorf("could not initiate connection pool: %w", err)
 	}
 	db := stdlib.OpenDBFromPool(pool)
 
@@ -62,7 +62,7 @@ func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	slog.Debug("Successfully connected to database.")
@@ -94,7 +94,7 @@ func ConnectToDatabaseWithConfig(dsn string, cfg DbConfig) (*Database, error) {
 		slog.Any("maxConIdleTime", cfg.ConnMaxIdleTime)),
 	)
 
-	return NewServer(db), nil
+	return NewServer(db), ctx, nil
 }
 
 // Close closes the database connection
