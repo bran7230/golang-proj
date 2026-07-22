@@ -124,19 +124,14 @@ func (s *TycoonService) worker() {
 }
 
 func (s *TycoonService) Close() {
+	close(s.queue)
+	// wait for workers to finish
+	s.wg.Wait()
+
 	// cancel background tasks and stop accepting new work
 	if s.cancel != nil {
 		s.cancel()
 	}
-	// close the queue to allow workers to drain remaining items
-	select {
-	case <-s.ctx.Done():
-		// already cancelled
-	default:
-	}
-	close(s.queue)
-	// wait for workers to finish
-	s.wg.Wait()
 }
 
 func (s *TycoonService) insertData(r *models.TycoonRequest) error {

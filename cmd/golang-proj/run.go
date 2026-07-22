@@ -1,21 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"golang-proj/internal/repository"
 	"os"
 )
 
-func InitiateDatabaseConnection() (*repository.Database, error) {
+func InitiateDatabaseConnection() (*repository.Database, context.Context, error) {
 
 	dsn := os.Getenv("DATABASE_CONNECTION_STRING")
 	if dsn == "" {
-		return nil, fmt.Errorf("database connection string not found in .env")
+		return nil, nil, fmt.Errorf("database connection string not found in .env")
 	}
 
-	db, databaseConError := repository.ConnectToDatabase(dsn)
+	db, ctx, databaseConError := repository.ConnectToDatabase(dsn)
 	if databaseConError != nil {
-		return nil, fmt.Errorf("error initializing database connection: %s", databaseConError)
+		return nil, ctx, fmt.Errorf("error initializing database connection: %s", databaseConError)
 	}
-	return db, nil
+	return db, ctx, nil
 }
