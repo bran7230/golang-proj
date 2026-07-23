@@ -36,7 +36,7 @@ Create a `.env` file in the root directory with the following variables:
 | `DOCKER_DB_NAME`             | Docker container name        | `my-tycoon-db`                                                            |
 | `POSTGRESS_DB_NAME`          | Database name                | `tycoon_db`                                                               |
 | `DATABASE_CONNECTION_STRING` | PostgreSQL connection URL    | `postgres://postgres:<password>@127.0.0.1:3307/tycoon_db?sslmode=disable` |
-| `APIKEY`                     | API authentication key       | Generate with `openssl rand -hex 32`                                      |
+| `API_KEY`                     | API authentication key       | Generate with `openssl rand -hex 32`                                      |
 | `HMAC_KEY`                   | Hmac key                     | Generate with `openssl rand -hex 32`                                      |
 | `LOGGING_LEVEL`              | Used to determine log levels | Either use "prod" or "dev" for more or less info.                         |
 
