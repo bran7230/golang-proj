@@ -10,7 +10,16 @@ import (
 func SetupRoutes(tycoonSvc service.TycoonProcessor, apiKey string, secretKey string) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	handleSavesEndpoint := AuthMiddleware(HandleSaves(tycoonSvc, []byte(secretKey)), apiKey)
+	// Initialize rate limiter: 10 requests per second with a burst of 20
+	rateLimiter := NewRateLimiter()
+	const rps = 10.0
+	const burst = 20
+
+	// Compose middlewares: auth + rate limit
+	handleSavesEndpoint := AuthMiddleware(
+		RateLimitMiddleware(rateLimiter, rps, burst)(HandleSaves(tycoonSvc, []byte(secretKey))),
+		apiKey,
+	)
 	mux.Handle("POST /", handleSavesEndpoint)
 
 	return mux
